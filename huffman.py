@@ -1,9 +1,41 @@
-def bubble_sort(lst):
-    for i in range(len(lst)):
-        for j in range(len(lst) - 1):
-            if lst[j][0] > lst[j+1][0]:
-                lst[j], lst[j+1] = lst[j+1], lst[j]
-    return lst
+def heap_push(heap, item):
+    heap.append(item)
+    i = len(heap) - 1
+    while i > 0:
+        parent = (i - 1) // 2
+        if heap[i][0] < heap[parent][0]:
+            heap[i], heap[parent] = heap[parent], heap[i]
+            i = parent
+        else:
+            break
+
+def heap_pop(heap):
+    if len(heap) == 1:
+        return heap.pop()
+    root = heap[0]
+    heap[0] = heap.pop()
+    i = 0
+    size = len(heap)
+    while True:
+        left = 2 * i + 1
+        right = 2 * i + 2
+        smallest = i
+        if left < size and heap[left][0] < heap[smallest][0]:
+            smallest = left
+        if right < size and heap[right][0] < heap[smallest][0]:
+            smallest = right
+        if smallest != i:
+            heap[i], heap[smallest] = heap[smallest], heap[i]
+            i = smallest
+        else:
+            break
+    return root
+
+def build_min_heap(freq_list):
+    heap = []
+    for item in freq_list:
+        heap_push(heap, item)
+    return heap
 
 def count_frequencies(data):
     freq = {}
@@ -14,20 +46,18 @@ def count_frequencies(data):
     return freq
 
 def sort_frequencies(freq):
-    freq_list = []
-    for char, count in freq.items():
-        freq_list.append((count, char))
-    freq_list = bubble_sort(freq_list)
+    freq_list = [(count, char) for char, count in freq.items()]
+    freq_list.sort(key=lambda x: x[0])
     return freq_list
 
 def build_tree(freq_list):
-    while len(freq_list) > 1:   
-        left = freq_list.pop(0)
-        right = freq_list.pop(0)
+    heap = build_min_heap(freq_list)
+    while len(heap) > 1:
+        left = heap_pop(heap)
+        right = heap_pop(heap)
         combined = (left[0] + right[0], (left, right))
-        freq_list.append(combined)
-        freq_list = bubble_sort(freq_list)
-    return freq_list[0]
+        heap_push(heap, combined)
+    return heap[0]
 
 def generate_codes(tree, prefix="", codes=None):
     if codes is None:
