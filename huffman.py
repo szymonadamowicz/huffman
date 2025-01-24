@@ -10,10 +10,13 @@ def heap_push(heap, item):
             break
 
 def heap_pop(heap):
-    if len(heap) == 1:
-        return heap.pop()
+    if not heap:
+        return None
+    last_item = heap.pop()
+    if not heap:
+        return last_item
     root = heap[0]
-    heap[0] = heap.pop()
+    heap[0] = last_item
     i = 0
     size = len(heap)
     while True:
@@ -40,9 +43,7 @@ def build_min_heap(freq_list):
 def count_frequencies(data):
     freq = {}
     for char in data:
-        if char not in freq:
-            freq[char] = 0
-        freq[char] += 1
+        freq[char] = freq.get(char, 0) + 1
     return freq
 
 def sort_frequencies(freq):
@@ -70,23 +71,23 @@ def generate_codes(tree, prefix="", codes=None):
     return codes
 
 def encode_data(data, codes):
-    encoded = ""
+    encoded = []
     for char in data:
-        encoded += codes[char]
-    return encoded
+        encoded.append(codes[char])
+    return "".join(encoded)
 
-def decode_data(encoded, tree):
-    decoded = ""
+def decode_data(bit_string, tree):
+    decoded = []
     node = tree
-    for bit in encoded:
+    for bit in bit_string:
         if bit == "0":
             node = node[1][0]
         else:
             node = node[1][1]
         if isinstance(node[1], str):
-            decoded += node[1]
+            decoded.append(node[1])
             node = tree
-    return decoded
+    return "".join(decoded)
 
 def compress(input_file, output_file):
     with open(input_file, "r", encoding="utf-8") as f:
@@ -96,6 +97,7 @@ def compress(input_file, output_file):
     tree = build_tree(freq_list)
     codes = generate_codes(tree)
     encoded = encode_data(data, codes)
+    encoded_length = len(encoded)
     byte_array = bytearray()
     buffer = ""
     for bit in encoded:
@@ -110,6 +112,7 @@ def compress(input_file, output_file):
         for char, count in freq.items():
             f.write(char.encode("utf-8"))
             f.write(count.to_bytes(4, "big"))
+        f.write(encoded_length.to_bytes(4, "big"))
         f.write(byte_array)
 
 def decompress(input_file, output_file):
@@ -120,13 +123,15 @@ def decompress(input_file, output_file):
             char = f.read(1).decode("utf-8")
             count = int.from_bytes(f.read(4), "big")
             freq[char] = count
+        encoded_length = int.from_bytes(f.read(4), "big")
         encoded_data = f.read()
-    bit_string = ""
+    bit_string = []
     for byte in encoded_data:
-        bit_string += f"{byte:08b}"
+        bit_string.append(f"{byte:08b}")
+    bit_string = "".join(bit_string)[:encoded_length]
     freq_list = sort_frequencies(freq)
     tree = build_tree(freq_list)
-    decoded = decode_data(bit_string.strip("0"), tree)
+    decoded = decode_data(bit_string, tree)
     with open(output_file, "w", encoding="utf-8") as f:
         f.write(decoded)
 
